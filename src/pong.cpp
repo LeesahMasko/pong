@@ -12,6 +12,8 @@ enum class CollisionType
     Top,
     Middle,
     Bottom,
+    Left,
+    Right
 };
 
 struct Contact
@@ -89,6 +91,29 @@ public:
             velocity.y = 0.75f * BALL_SPEED;
         }
     }
+    void CollideWithWall(Contact const &contact)
+    {
+        if ((contact.type == CollisionType::Top) || (contact.type == CollisionType::Bottom))
+        {
+            position.y += contact.penetration;
+            velocity.y = -velocity.y;
+        }
+        else if (contact.type == CollisionType::Left)
+        {
+            position.x = WINDOW_WIDTH / 2.0f;
+            position.y = WINDOW_HEIGHT / 2.0f;
+            velocity.x = -BALL_SPEED;
+            velocity.y = 0.75f * BALL_SPEED;
+        }
+        else if (contact.type == CollisionType::Right)
+        {
+            position.x = WINDOW_WIDTH / 2.0f;
+            position.y = WINDOW_HEIGHT / 2.0f;
+            velocity.x = -BALL_SPEED;
+            velocity.y = 0.75 * BALL_SPEED;
+        }
+    }
+
     void Update(float dt)
     {
         position += velocity * dt;
@@ -189,6 +214,36 @@ public:
     SDL_Texture *texture;
     SDL_Rect rect;
 };
+
+Contact CheckWallCollision(Ball const &ball)
+{
+    float ballLeft = ball.position.x;
+    float ballRight = ball.position.x + BALL_WIDTH;
+    float ballTop = ball.position.y;
+    float ballBottom = ball.position.y + BALL_HEIGHT;
+
+    Contact contact{};
+    if (ballLeft < 0.0f)
+    {
+        contact.type = CollisionType::Left;
+    }
+    else if (ballRight > WINDOW_WIDTH)
+    {
+        contact.type = CollisionType::Right;
+    }
+    else if (ballTop < 0.0f)
+    {
+        contact.type = CollisionType::Top;
+        contact.penetration = -ballTop;
+    }
+    else if (ballBottom > WINDOW_HEIGHT)
+    {
+        contact.type = CollisionType::Bottom;
+        contact.penetration = WINDOW_HEIGHT - ballBottom;
+    }
+
+    return contact;
+}
 
 Contact CheckPaddleCollision(Ball const &ball, Paddle const &paddle)
 {
@@ -382,6 +437,11 @@ int main()
                      contact.type != CollisionType::None)
             {
                 ball.CollideWithPaddle(contact);
+            }
+            else if (Contact contact = CheckWallCollision(ball);
+                     contact.type != CollisionType::None)
+            {
+                ball.CollideWithWall(contact);
             }
 
             // Clear the window to black
