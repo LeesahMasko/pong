@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <SDL2/SDL_ttf.h>
 #include <chrono>
+#include <string>
 
 const int WINDOW_WIDTH = 1280;
 const int WINDOW_HEIGHT = 720;
@@ -208,6 +209,25 @@ public:
     {
         SDL_RenderCopy(renderer, texture, nullptr, &rect);
     }
+    void SetScore(int score)
+    {
+        SDL_FreeSurface(surface);
+        SDL_DestroyTexture(texture);
+
+        SDL_Color colors;
+        colors.a = 0xFF;
+        colors.b = 0xFF;
+        colors.g = 0xFF;
+        colors.r = 0xFF;
+
+        surface = TTF_RenderText_Solid(font, std::to_string(score).c_str(), colors);
+        texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+        int width, height;
+        SDL_QueryTexture(texture, nullptr, nullptr, &width, &height);
+        rect.w = width;
+        rect.h = height;
+    }
     SDL_Renderer *renderer;
     TTF_Font *font;
     SDL_Surface *surface;
@@ -331,6 +351,9 @@ int main()
     Paddle paddleTwo(
         Vec2(WINDOW_WIDTH - 50.0f, (WINDOW_HEIGHT / 2.0f) - (PADDLE_HEIGHT / 2.0f)), Vec2(0.0f, 0.0f));
 
+    int playerOneScore = 0;
+    int playerTwoScore = 0;
+
     // Game logic
     {
         bool running = true;
@@ -442,6 +465,17 @@ int main()
                      contact.type != CollisionType::None)
             {
                 ball.CollideWithWall(contact);
+
+                if (contact.type == CollisionType::Left)
+                {
+                    ++playerTwoScore;
+                    playerTwoScoreText.SetScore(playerTwoScore);
+                }
+                else if (contact.type == CollisionType::Right)
+                {
+                    ++playerOneScore;
+                    playerOneScoreText.SetScore(playerOneScore);
+                }
             }
 
             // Clear the window to black
