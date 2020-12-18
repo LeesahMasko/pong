@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <chrono>
 #include <string>
 
@@ -103,7 +104,7 @@ public:
         {
             position.x = WINDOW_WIDTH / 2.0f;
             position.y = WINDOW_HEIGHT / 2.0f;
-            velocity.x = -BALL_SPEED;
+            velocity.x = BALL_SPEED;
             velocity.y = 0.75f * BALL_SPEED;
         }
         else if (contact.type == CollisionType::Right)
@@ -326,8 +327,9 @@ int main()
 
 {
     // InitiALIZE SDL COMPONENTS
-    SDL_Init(SDL_INIT_VIDEO);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
     TTF_Init();
+    Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048);
 
     SDL_Window *window = SDL_CreateWindow("Pong", 0, 0, WINDOW_WIDTH, WINDOW_HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, 0);
@@ -353,6 +355,9 @@ int main()
 
     int playerOneScore = 0;
     int playerTwoScore = 0;
+
+    Mix_Chunk *wallHitSound = Mix_LoadWAV("wall.wav");
+    Mix_Chunk *paddleHitSound = Mix_LoadWAV("paddle.wav");
 
     // Game logic
     {
@@ -455,11 +460,15 @@ int main()
                 contact.type != CollisionType::None)
             {
                 ball.CollideWithPaddle(contact);
+
+                Mix_PlayChannel(-1, paddleHitSound, 0);
             }
             else if (Contact contact = CheckPaddleCollision(ball, paddleTwo);
                      contact.type != CollisionType::None)
             {
                 ball.CollideWithPaddle(contact);
+
+                Mix_PlayChannel(-1, paddleHitSound, 0);
             }
             else if (Contact contact = CheckWallCollision(ball);
                      contact.type != CollisionType::None)
@@ -475,6 +484,12 @@ int main()
                 {
                     ++playerOneScore;
                     playerOneScoreText.SetScore(playerOneScore);
+                }
+                else
+                {
+                    {
+                        Mix_PlayChannel(-1, wallHitSound, 0);
+                    }
                 }
             }
 
@@ -511,9 +526,12 @@ int main()
         }
     }
     //CLeanup
+    Mix_FreeChunk(wallHitSound);
+    Mix_FreeChunk(paddleHitSound);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     TTF_CloseFont(scoreFont);
+    Mix_Quit();
     TTF_Quit();
     SDL_Quit();
 
